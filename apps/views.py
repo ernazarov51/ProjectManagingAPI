@@ -78,6 +78,11 @@ class SprintModelViewSet(ModelViewSet):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+    def perform_destroy(self, instance):
+        if instance.project.created_by != self.request.user:
+            raise PermissionDenied("You are not owner this project")
+
+        instance.delete()
 
 
 class SprintByProjectListAPIView(ListAPIView):
