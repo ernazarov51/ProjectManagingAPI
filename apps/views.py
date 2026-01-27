@@ -1,18 +1,15 @@
-from django.db import transaction
 from django.http import JsonResponse
-from django.shortcuts import render
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.generics import CreateAPIView, ListAPIView
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.generics import CreateAPIView, ListAPIView,RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.models import Project, User, Sprint, Task, AssignHistory
 from apps.serializers import ProjectModelSerializer, UserRegisterModelSerializer, SprintModelSerializer, \
-    TaskModelSerializer, AssignSerializer, AssignHistoryModelSerializer, SprintModelSerializerr
+    TaskModelSerializer, AssignSerializer, AssignHistoryModelSerializer, SprintModelSerializerr, UserListModelSerializer
 
 
 # Create your views here.
@@ -84,7 +81,7 @@ class SprintModelViewSet(ModelViewSet):
 
         instance.delete()
 
-
+@extend_schema(tags=['sprints'])
 class SprintByProjectListAPIView(ListAPIView):
     queryset = Sprint.objects.all()
     serializer_class = SprintModelSerializerr
@@ -108,15 +105,72 @@ class TaskModelViewSet(ModelViewSet):
         context['request'] = self.request
         return context
 
+@extend_schema(tags=['tasks'],
+    parameters=[
+        OpenApiParameter(name='state', description='project yoki sprint', required=True, type=str),
+        OpenApiParameter(name='id', description='Project yoki Sprint ID', required=True, type=int),
+    ]
+)
+class TaskBySprintListAPIView(ListAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskModelSerializer
+
+    def get_queryset(self):
+        qs=super().get_queryset()
+        state=self.request.GET.get('state')
+        id=self.request.GET.get('id')
+        states=['project','sprint']
+        if state not in states:
+            print(True)
+            return ValidationError("This state is not found",400)
+        if state=='project':
+            qs.filter(sprint__project_id=id)
+            return qs
+        return qs.filter(sprint_id=id)
 
 
-@extend_schema(tags=['tasks'], request=AssignSerializer)
+
+@extend_schema(tags=['assign history'])
+class AssignHistoryListAPIView(ListAPIView):
+    queryset = AssignHistory.objects.all()
+    serializer_class = AssignHistoryModelSerializer
+
+
+@extend_schema(tags=['assign history'], request=AssignSerializer)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def task_assign(request):
-    print(request.data)
+def task_assign(request,task_id):
+    if not task_id:
+        raise ValidationError("task_id must be sent",400)
+    task=Task.objects.filter(id=task_id)
+    if not task:
+        raise ValidationError("Task Not Found")
+    task=task.first()
+    user=User.objects.filter(id=request.data.get('user_id'))
+    if not user:
+        raise ValidationError("user not Found")
+    user =user.first()
+    task.user=user
+    serializer=TaskModelSerializer(instance=task)
+    reason=request.data.get('reason')
+    AssignHistory.objects.create(reason=reason,task=task,old_worker=request.user,new_worker=user)
+    return JsonResponse(serializer.data)
 
 
+@extend_schema(tags=['user'])
+class UserListAPIView(ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserListModelSerializer
+
+
+@extend_schema(tags=['user'])
+class UserDetailRetrieveAPIView(RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserRegisterModelSerializer
+
+    def get_queryset(self):
+        qs=super().get_queryset()
+        return qs.filter(id=self.kwargs.get('pk'))
 
 
 

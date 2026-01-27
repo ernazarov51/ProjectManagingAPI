@@ -34,7 +34,7 @@ class UserRegisterModelSerializer(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'username', 'password', 'confirm_password']
+        fields = ['id','first_name', 'last_name', 'email', 'username', 'password', 'confirm_password']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -103,7 +103,6 @@ class TaskModelSerializer(ModelSerializer):
 
 class AssignSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
-    task_id = serializers.IntegerField()
     reason = serializers.CharField(max_length=500)
 
 class AssignHistoryModelSerializer(ModelSerializer):
@@ -111,6 +110,10 @@ class AssignHistoryModelSerializer(ModelSerializer):
         model = AssignHistory
         fields = '__all__'
 
+class UserListModelSerializer(ModelSerializer):
+    class Meta:
+        model=User
+        fields=['id','username','email']
 
 
 
