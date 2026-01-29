@@ -1,4 +1,7 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.http import JsonResponse
+from django.views.generic import TemplateView
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -150,10 +153,30 @@ def task_assign(request,task_id):
     if not user:
         raise ValidationError("user not Found")
     user =user.first()
+    if task.user==user:
+        raise ValidationError(f"anyway, this task belongs to the {user.username}")
+    if user==request.user:
+        raise ValidationError(f"this task belongs to you")
     task.user=user
+    task.save()
     serializer=TaskModelSerializer(instance=task)
     reason=request.data.get('reason')
-    AssignHistory.objects.create(reason=reason,task=task,old_worker=request.user,new_worker=user)
+    channel_layer = get_channel_layer()
+
+    assign_history=AssignHistory.objects.create(reason=reason,task=task,old_worker=request.user,new_worker=user)
+    async_to_sync(channel_layer.group_send)(
+        f"user_{task.user.id}",
+        {
+            "type": "send_notification",
+            "data": {
+                "type": "AssignTask",
+                "message": f"{request.user.username} assigned his own task to you",
+                "task":dict(serializer.data),
+                "reason":reason,
+                "time":f"{assign_history.created_at}"
+            }
+        }
+    )
     return JsonResponse(serializer.data)
 
 
@@ -178,6 +201,13 @@ class UserDetailRetrieveAPIView(RetrieveAPIView):
 
 
 
+class WSTemplateView(TemplateView):
+    template_name = 'test.html'
+    def get_context_data(self, **kwargs):
+        context=super().get_context_data()
+        token=self.kwargs.get('token')
+        context['token']=token
+        return context
 
 
 

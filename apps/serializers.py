@@ -1,3 +1,5 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -88,6 +90,7 @@ class TaskModelSerializer(ModelSerializer):
     class Meta:
         model=Task
         fields='__all__'
+        depth =1
         extra_kwargs={
             'status':{'read_only':True},
             'created_at':{'read_only':True}
@@ -100,6 +103,24 @@ class TaskModelSerializer(ModelSerializer):
 
         instance=super().update(instance,validated_data)
         return instance
+
+    def create(self, validated_data):
+        user=self.context['request'].user
+        task=Task.objects.create(**validated_data)
+        channel_layer=get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{task.user.id}",
+            {
+                "type": "send_notification",
+                "data": {
+                    "type": "CreatedNewTask",
+                    "message": f"New task created by {user.username} for you",
+                    "time": f"{task.created_at}",
+                    "task": TaskModelSerializer(task).data,
+                }
+            }
+        )
+        return task
 
 class AssignSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()

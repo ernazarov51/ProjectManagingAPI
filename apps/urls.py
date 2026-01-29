@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.views import ProjectModelViewSet, UserCreateAPIView, MyProjectsAPIView, SprintModelViewSet, TaskModelViewSet, \
     ProjectsByMeListAPIView, task_assign, SprintByProjectListAPIView, AssignHistoryListAPIView, UserListAPIView, \
-    TaskBySprintListAPIView, UserDetailRetrieveAPIView
+    TaskBySprintListAPIView, UserDetailRetrieveAPIView, WSTemplateView
 
 router = DefaultRouter()
 router.register('projects', ProjectModelViewSet)
@@ -20,4 +20,5 @@ urlpatterns = [
     path('register/', UserCreateAPIView.as_view(), name='register'),
     path('all-users/',UserListAPIView.as_view()),
     path('user-detail/<int:pk>/',UserDetailRetrieveAPIView.as_view()),
+    path('connect/<str:token>/',WSTemplateView.as_view()),
 ]
