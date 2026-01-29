@@ -44,9 +44,9 @@
     const usernameEl = document.getElementById("username");
 
     const token = "{{ token }}";
-
+    const host = window.location.host;
     const socket = new WebSocket(
-        `ws://127.0.0.1:8000/ws/notifications/?token=${token}`
+        `ws://${host}/ws/notifications/?token=${token}`
     );
 
     socket.onopen = function () {
