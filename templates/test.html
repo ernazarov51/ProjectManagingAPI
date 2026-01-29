@@ -10,6 +10,7 @@
             color: #000000;
             padding: 20px;
         }
+
         #status {
             position: fixed;
             top: 10px;
@@ -19,6 +20,7 @@
             border: 1px solid #000;
             border-radius: 5px;
         }
+
         #output {
             margin-top: 50px;
             white-space: pre-wrap;
@@ -44,10 +46,11 @@
     const usernameEl = document.getElementById("username");
 
     const token = "{{ token }}";
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
     const host = window.location.host;
-    const socket = new WebSocket(
-        `ws://${host}/ws/notifications/?token=${token}`
-    );
+
+    const socket = new WebSocket(`${protocol}://${host}/ws/notifications/?token=${token}`);
+
 
     socket.onopen = function () {
         statusEl.textContent = "Connected ✅";
