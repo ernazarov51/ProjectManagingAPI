@@ -90,7 +90,6 @@ class TaskModelSerializer(ModelSerializer):
     class Meta:
         model=Task
         fields='__all__'
-        depth =1
         extra_kwargs={
             'status':{'read_only':True},
             'created_at':{'read_only':True}

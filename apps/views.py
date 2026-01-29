@@ -5,7 +5,7 @@ from django.views.generic import TemplateView
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.generics import CreateAPIView, ListAPIView,RetrieveAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -59,13 +59,14 @@ class MyProjectsAPIView(ListAPIView):
         queryset = super().get_queryset()
         return queryset.filter(sprints__tasks__user=self.request.user)
 
+
 @extend_schema(tags=['projects'])
 class ProjectsByMeListAPIView(ListAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectModelSerializer
 
     def get_queryset(self):
-        queryset=super().get_queryset()
+        queryset = super().get_queryset()
         return queryset.filter(created_by=self.request.user)
 
 
@@ -78,11 +79,13 @@ class SprintModelViewSet(ModelViewSet):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
     def perform_destroy(self, instance):
         if instance.project.created_by != self.request.user:
             raise PermissionDenied("You are not owner this project")
 
         instance.delete()
+
 
 @extend_schema(tags=['sprints'])
 class SprintByProjectListAPIView(ListAPIView):
@@ -90,12 +93,9 @@ class SprintByProjectListAPIView(ListAPIView):
     serializer_class = SprintModelSerializerr
 
     def get_queryset(self):
-        qs=super().get_queryset()
-        project_id=self.kwargs.get('project_id')
+        qs = super().get_queryset()
+        project_id = self.kwargs.get('project_id')
         return qs.filter(project_id=project_id)
-
-
-
 
 
 class TaskModelViewSet(ModelViewSet):
@@ -108,29 +108,29 @@ class TaskModelViewSet(ModelViewSet):
         context['request'] = self.request
         return context
 
+
 @extend_schema(tags=['tasks'],
-    parameters=[
-        OpenApiParameter(name='state', description='project yoki sprint', required=True, type=str),
-        OpenApiParameter(name='id', description='Project yoki Sprint ID', required=True, type=int),
-    ]
-)
+               parameters=[
+                   OpenApiParameter(name='state', description='project yoki sprint', required=True, type=str),
+                   OpenApiParameter(name='id', description='Project yoki Sprint ID', required=True, type=int),
+               ]
+               )
 class TaskBySprintListAPIView(ListAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskModelSerializer
 
     def get_queryset(self):
-        qs=super().get_queryset()
-        state=self.request.GET.get('state')
-        id=self.request.GET.get('id')
-        states=['project','sprint']
+        qs = super().get_queryset()
+        state = self.request.GET.get('state')
+        id = self.request.GET.get('id')
+        states = ['project', 'sprint']
         if state not in states:
             print(True)
-            return ValidationError("This state is not found",400)
-        if state=='project':
+            return ValidationError("This state is not found", 400)
+        if state == 'project':
             qs.filter(sprint__project_id=id)
             return qs
         return qs.filter(sprint_id=id)
-
 
 
 @extend_schema(tags=['assign history'])
@@ -142,28 +142,28 @@ class AssignHistoryListAPIView(ListAPIView):
 @extend_schema(tags=['assign history'], request=AssignSerializer)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def task_assign(request,task_id):
+def task_assign(request, task_id):
     if not task_id:
-        raise ValidationError("task_id must be sent",400)
-    task=Task.objects.filter(id=task_id)
+        raise ValidationError("task_id must be sent", 400)
+    task = Task.objects.filter(id=task_id)
     if not task:
         raise ValidationError("Task Not Found")
-    task=task.first()
-    user=User.objects.filter(id=request.data.get('user_id'))
+    task = task.first()
+    user = User.objects.filter(id=request.data.get('user_id'))
     if not user:
         raise ValidationError("user not Found")
-    user =user.first()
-    if task.user==user:
+    user = user.first()
+    if task.user == user:
         raise ValidationError(f"anyway, this task belongs to the {user.username}")
-    if user==request.user:
+    if user == request.user:
         raise ValidationError(f"this task belongs to you")
-    task.user=user
+    task.user = user
     task.save()
-    serializer=TaskModelSerializer(instance=task)
-    reason=request.data.get('reason')
+    serializer = TaskModelSerializer(instance=task)
+    reason = request.data.get('reason')
     channel_layer = get_channel_layer()
 
-    assign_history=AssignHistory.objects.create(reason=reason,task=task,old_worker=request.user,new_worker=user)
+    assign_history = AssignHistory.objects.create(reason=reason, task=task, old_worker=request.user, new_worker=user)
     async_to_sync(channel_layer.group_send)(
         f"user_{task.user.id}",
         {
@@ -171,9 +171,9 @@ def task_assign(request,task_id):
             "data": {
                 "type": "AssignTask",
                 "message": f"{request.user.username} assigned his own task to you",
-                "task":dict(serializer.data),
-                "reason":reason,
-                "time":f"{assign_history.created_at}"
+                "task": dict(serializer.data),
+                "reason": reason,
+                "time": f"{assign_history.created_at}"
             }
         }
     )
@@ -192,24 +192,18 @@ class UserDetailRetrieveAPIView(RetrieveAPIView):
     serializer_class = UserRegisterModelSerializer
 
     def get_queryset(self):
-        qs=super().get_queryset()
+        qs = super().get_queryset()
         return qs.filter(id=self.kwargs.get('pk'))
-
-
-
-
-
 
 
 class WSTemplateView(TemplateView):
     template_name = 'test.html'
+
     def get_context_data(self, **kwargs):
-        context=super().get_context_data()
-        token=self.kwargs.get('token')
-        context['token']=token
+        context = super().get_context_data()
+        token = self.kwargs.get('token')
+        context['token'] = token
         return context
-
-
 
 
 

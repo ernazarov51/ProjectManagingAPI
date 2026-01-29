@@ -30,21 +30,4 @@ class TokenAuthMiddleware:
 
 
 
-class SimpleMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
 
-    def __call__(self, request):
-        user = getattr(request, "user", None)
-        if user and user.is_authenticated:
-            device = user.devices.first()
-            last_active = device.last_active or now()
-            if now() - last_active > timedelta(days=7):
-                return JsonResponse({
-                    "message": "Sizning qurilmangiz 7 kundan beri aktiv emas. Iltimos, qayta login qiling."}
-                )
-        else:
-            print(f"Anonymous User - {request.method} {request.path}")
-
-        response = self.get_response(request)
-        return response
