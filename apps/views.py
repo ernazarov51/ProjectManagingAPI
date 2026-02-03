@@ -5,14 +5,15 @@ from django.views.generic import TemplateView
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.models import Project, User, Sprint, Task, AssignHistory
 from apps.serializers import ProjectModelSerializer, UserRegisterModelSerializer, SprintModelSerializer, \
-    TaskModelSerializer, AssignSerializer, AssignHistoryModelSerializer, SprintModelSerializerr, UserListModelSerializer
+    TaskModelSerializer, AssignSerializer, AssignHistoryModelSerializer, SprintModelSerializerr, \
+    UserListModelSerializer, UserUpdateModelSerializer, UserForgotPasswordModelSerializer
 
 
 # Create your views here.
@@ -199,8 +200,30 @@ class UserDetailRetrieveAPIView(RetrieveAPIView):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(id=self.kwargs.get('pk'))
+@extend_schema(tags=['user'])
+class UserModelUpdateAPIView(UpdateAPIView):
+    permission_classes([IsAuthenticated])
+    serializer_class = UserUpdateModelSerializer
+    queryset = User.objects.all()
+    lookup_field = 'pk'
 
+    def get_serializer_context(self):
+        c=super().get_serializer_context()
+        c['user']=self.request.user
+        return c
 
+@extend_schema(tags=['user'],request=UserForgotPasswordModelSerializer)
+@api_view(['POST'])
+def forgot_password(request):
+    if request.method=='POST':
+        user=request.user
+        serializer=UserForgotPasswordModelSerializer(data=request.data,context={'user':user})
+        if serializer.is_valid():
+            print(True)
+            serializer.save()
+            return JsonResponse(serializer.data)
+        print(False)
+        return JsonResponse(serializer.errors)
 class WSTemplateView(TemplateView):
     template_name = 'test.html'
 

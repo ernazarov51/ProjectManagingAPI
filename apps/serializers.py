@@ -1,8 +1,9 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
 
 from apps.models import Project, User, Sprint, Task, AssignHistory
@@ -137,3 +138,37 @@ class UserListModelSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email']
+
+class UserUpdateModelSerializer(ModelSerializer):
+    class Meta:
+        model=User
+        fields=['first_name','last_name','avatar','bio']
+
+    def update(self, instance, validated_data):
+        user=self.context['user']
+        if user!=instance:
+            raise ValidationError("Validation error",403)
+        instance=super().update(instance,validated_data)
+        return instance
+
+class UserForgotPasswordModelSerializer(serializers.Serializer):
+    old_password=serializers.CharField()
+    new_password=serializers.CharField()
+    def validate(self, attrs):
+        user:User=self.context['user']
+        if not user.check_password(attrs['old_password']):
+            raise ValidationError("Old password is incorrect")
+        validate_password(attrs['new_password'])
+        return attrs
+
+    def save(self):
+        user=self.context['user']
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        return user
+
+
+
+
+
+
