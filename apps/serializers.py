@@ -36,7 +36,7 @@ class UserRegisterModelSerializer(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id','first_name', 'last_name', 'email', 'username', 'password', 'confirm_password']
+        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'confirm_password','bio','avatar']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -64,7 +64,6 @@ class SprintModelSerializer(ModelSerializer):
             'created_at': {'read_only': True}
         }
 
-
     def update(self, instance: Sprint, validated_data):
         user = self.context['request'].user
         if instance.project.created_by != user:
@@ -75,38 +74,39 @@ class SprintModelSerializer(ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
         project = validated_data['project']
-        if user.id!=project.created_by.id:
+        if user.id != project.created_by.id:
             raise serializers.ValidationError("This project not yours")
-        sprint=Sprint.objects.create(**validated_data)
+        sprint = Sprint.objects.create(**validated_data)
         return sprint
+
 
 class SprintModelSerializerr(ModelSerializer):
     class Meta:
-        model=Sprint
-        fields='__all__'
+        model = Sprint
+        fields = '__all__'
 
 
 class TaskModelSerializer(ModelSerializer):
     class Meta:
-        model=Task
-        fields='__all__'
-        extra_kwargs={
-            'status':{'read_only':True},
-            'created_at':{'read_only':True}
+        model = Task
+        fields = '__all__'
+        extra_kwargs = {
+            'status': {'read_only': True},
+            'created_at': {'read_only': True}
         }
 
-    def update(self, instance:Task, validated_data):
-        user=self.context['request'].user
-        if instance.sprint.project.created_by!=user:
-            raise serializers.ValidationError('This action is not allowed for you',400)
+    def update(self, instance: Task, validated_data):
+        user = self.context['request'].user
+        if instance.sprint.project.created_by != user:
+            raise serializers.ValidationError('This action is not allowed for you', 400)
 
-        instance=super().update(instance,validated_data)
+        instance = super().update(instance, validated_data)
         return instance
 
     def create(self, validated_data):
-        user=self.context['request'].user
-        task=Task.objects.create(**validated_data)
-        channel_layer=get_channel_layer()
+        user = self.context['request'].user
+        task = Task.objects.create(**validated_data)
+        channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"user_{task.user.id}",
             {
@@ -121,20 +121,19 @@ class TaskModelSerializer(ModelSerializer):
         )
         return task
 
+
 class AssignSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
     reason = serializers.CharField(max_length=500)
+
 
 class AssignHistoryModelSerializer(ModelSerializer):
     class Meta:
         model = AssignHistory
         fields = '__all__'
 
+
 class UserListModelSerializer(ModelSerializer):
     class Meta:
-        model=User
-        fields=['id','username','email']
-
-
-
-
+        model = User
+        fields = ['id', 'username', 'email']

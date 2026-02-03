@@ -5,7 +5,9 @@ from django.db.models import ForeignKey, SET_NULL, CASCADE
 
 # Create your models here.
 class User(AbstractUser):
-    pass
+    bio=models.TextField(null=True,blank=True)
+    avatar=models.ImageField(upload_to='user/avatar',null=True,blank=True)
+
 
 
 class Project(models.Model):

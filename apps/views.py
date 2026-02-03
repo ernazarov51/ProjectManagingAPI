@@ -75,6 +75,7 @@ class SprintModelViewSet(ModelViewSet):
     queryset = Sprint.objects.all()
     serializer_class = SprintModelSerializer
 
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request
@@ -137,6 +138,10 @@ class TaskBySprintListAPIView(ListAPIView):
 class AssignHistoryListAPIView(ListAPIView):
     queryset = AssignHistory.objects.all()
     serializer_class = AssignHistoryModelSerializer
+
+    def get_queryset(self):
+        qs=super().get_queryset()
+        return qs.filter(task_id=self.kwargs.get('task_id'))
 
 
 @extend_schema(tags=['assign history'], request=AssignSerializer)
