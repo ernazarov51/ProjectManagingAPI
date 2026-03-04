@@ -219,10 +219,8 @@ def forgot_password(request):
         user=request.user
         serializer=UserForgotPasswordModelSerializer(data=request.data,context={'user':user})
         if serializer.is_valid():
-            print(True)
             serializer.save()
             return JsonResponse(serializer.data)
-        print(False)
         return JsonResponse(serializer.errors)
 class WSTemplateView(TemplateView):
     template_name = 'test.html'

@@ -10,6 +10,8 @@ class User(AbstractUser):
 
 
 
+
+
 class Project(models.Model):
     title=models.CharField(max_length=255)
     description=models.TextField()
@@ -56,6 +58,9 @@ class AssignHistory(models.Model):
     old_worker=ForeignKey('apps.User',on_delete=SET_NULL,null=True,blank=True,related_name='old_worker')
     new_worker=ForeignKey('apps.User',on_delete=SET_NULL,null=True,blank=True,related_name='new_worker')
     created_at=models.DateTimeField(auto_now_add=True)
+
+
+
 
 
 
