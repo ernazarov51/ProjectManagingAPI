@@ -105,21 +105,21 @@ class TaskModelSerializer(ModelSerializer):
         return instance
 
     def create(self, validated_data):
-        user = self.context['request'].user
+        # user = self.context['request'].user
         task = Task.objects.create(**validated_data)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"user_{task.user.id}",
-            {
-                "type": "send_notification",
-                "data": {
-                    "type": "CreatedNewTask",
-                    "message": f"New task created by {user.username} for you",
-                    "time": f"{task.created_at}",
-                    "task": TaskModelSerializer(task).data,
-                }
-            }
-        )
+        # channel_layer = get_channel_layer()
+        # async_to_sync(channel_layer.group_send)(
+        #     f"user_{task.user.id}",
+        #     {
+        #         "type": "send_notification",
+        #         "data": {
+        #             "type": "CreatedNewTask",
+        #             "message": f"New task created by {user.username} for you",
+        #             "time": f"{task.created_at}",
+        #             "task": TaskModelSerializer(task).data,
+        #         }
+        #     }
+        # )
         return task
 
 
