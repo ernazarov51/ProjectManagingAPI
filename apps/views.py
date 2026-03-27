@@ -13,7 +13,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from apps.models import Project, User, Sprint, Task, AssignHistory
 from apps.serializers import ProjectModelSerializer, UserRegisterModelSerializer, SprintModelSerializer, \
     TaskModelSerializer, AssignSerializer, AssignHistoryModelSerializer, SprintModelSerializerr, \
-    UserListModelSerializer, UserUpdateModelSerializer, UserForgotPasswordModelSerializer
+    UserListModelSerializer, UserUpdateModelSerializer, UserForgotPasswordModelSerializer, \
+    CustomTokenObtainPairSerializer
 
 
 # Create your views here.
@@ -25,7 +26,7 @@ class UserCreateAPIView(CreateAPIView):
 
 @extend_schema(tags=['auth'])
 class CustomTokenObtainPairView(TokenObtainPairView):
-    pass
+    serializer_class = CustomTokenObtainPairSerializer
 
 
 @extend_schema(tags=['auth'])

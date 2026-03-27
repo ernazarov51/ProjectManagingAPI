@@ -166,7 +166,27 @@ class UserForgotPasswordModelSerializer(serializers.Serializer):
         user.save()
         return user
 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # token ichiga ham qo‘shsa bo‘ladi (optional)
+        token['user_id'] = user.id
+
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        # responsega qo‘shamiz
+        data['user_id'] = self.user.id
+
+        return data
 
 
 
